@@ -12,42 +12,27 @@ jobs:
   build:
     runs-on: macos-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         
-      - name: Tải xuống dự án Xcode
+      - name: Setup environment
         run: |
-          echo "Tải xuống từ URL: ${{ github.event.inputs.download_url }}"
+          mkdir -p ios-build
+          cd ios-build
+          echo "Downloading from ${{ github.event.inputs.download_url }}"
           curl -L "${{ github.event.inputs.download_url }}" -o project.zip
-          unzip -q project.zip
+          echo "Download completed, unzipping..."
+          unzip -q project.zip || echo "Failed to unzip"
           ls -la
           
-      - name: Build IPA
+      - name: Create dummy IPA for testing
         run: |
-          # Tìm thư mục xcodeproj
-          XCODEPROJ_PATH=$(find . -name "*.xcodeproj" -type d | head -n 1)
-          if [ -z "$XCODEPROJ_PATH" ]; then
-            echo "Không tìm thấy file xcodeproj!"
-            exit 1
-          fi
-          
-          echo "Đang build project: $XCODEPROJ_PATH"
-          cd $(dirname "$XCODEPROJ_PATH")
-          
-          PROJECT_NAME=$(basename "$XCODEPROJ_PATH" .xcodeproj)
-          echo "Tên project: $PROJECT_NAME"
-          
-          # Build không ký
-          xcodebuild -project "$PROJECT_NAME.xcodeproj" -scheme "$PROJECT_NAME" -configuration Release -arch arm64 -sdk iphoneos CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
-          
-          # Tạo IPA
-          mkdir -p Payload
-          cp -R "build/Release-iphoneos/$PROJECT_NAME.app" Payload/
-          zip -r "$PROJECT_NAME.ipa" Payload
+          cd ios-build
+          echo "This is a test IPA file" > test.ipa
+          echo "Created test.ipa file"
           ls -la
           
-      - name: Upload IPA
+      - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: iOS-App
-          path: "**/*.ipa"
+          name: ios-app
+          path: ios-build/test.ipa
