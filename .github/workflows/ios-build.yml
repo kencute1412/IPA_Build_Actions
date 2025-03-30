@@ -1,22 +1,48 @@
 name: Build iOS IPA
 
 on:
-  workflow_dispatch
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v3
-      
-      - name: Create dummy file
+      - name: Checkout
+        uses: actions/checkout@v3
+        
+      - name: Download Xcode project
         run: |
-          mkdir -p build
-          echo "test content" > build/test.txt
-          ls -la build/
+          mkdir -p xcode_project
+          cd xcode_project
+          curl -L "https://drive.google.com/uc?export=download&id=1RKSI64zoHHgwLxfF2DMiOEJMyiEoGMSm" -o project.zip
+          unzip -q project.zip || echo "Failed to unzip, continuing anyway"
+          ls -la
           
-      - name: Upload artifact
+      - name: Build IPA
+        run: |
+          cd xcode_project
+          XCODEPROJ_PATH=$(find . -name "*.xcodeproj" -type d | head -n 1)
+          if [ -z "$XCODEPROJ_PATH" ]; then
+            echo "Không tìm thấy file xcodeproj!"
+            exit 1
+          fi
+          
+          echo "Found project: $XCODEPROJ_PATH"
+          cd $(dirname "$XCODEPROJ_PATH")
+          PROJECT_NAME=$(basename "$XCODEPROJ_PATH" .xcodeproj)
+          echo "Project name: $PROJECT_NAME"
+          
+          # Build cho iOS mà không cần ký
+          xcodebuild -project "$PROJECT_NAME.xcodeproj" -scheme "$PROJECT_NAME" -configuration Release -arch arm64 -sdk iphoneos CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+          
+          # Tạo file IPA
+          mkdir -p Payload
+          cp -R "build/Release-iphoneos/$PROJECT_NAME.app" Payload/
+          zip -r "$PROJECT_NAME.ipa" Payload
+          find . -name "*.ipa"
+          
+      - name: Upload IPA
         uses: actions/upload-artifact@v3
         with:
-          name: test-file
-          path: build/test.txt
+          name: ios-app
+          path: "xcode_project/**/*.ipa"
