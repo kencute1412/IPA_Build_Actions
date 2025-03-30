@@ -1,0 +1,34 @@
+name: Build iOS IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+          
+      - name: Create project directories
+        run: mkdir -p Unity-iPhone
+          
+      - name: Build unsigned IPA
+        run: |
+          cd Unity-iPhone
+          # Tạo project Xcode mẫu (thực tế bạn sẽ cần tải dự án thực của mình)
+          xcodebuild -project Unity-iPhone.xcodeproj -scheme Unity-iPhone -configuration Release -arch arm64 -sdk iphoneos CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+          mkdir -p Payload
+          cp -R build/Release-iphoneos/Unity-iPhone.app Payload/
+          zip -r App.ipa Payload/
+          
+      - name: Upload IPA
+        uses: actions/upload-artifact@v2
+        with:
+          name: iOS-App
+          path: Unity-iPhone/App.ipa
