@@ -13,12 +13,13 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         
       - name: Tải xuống dự án Xcode
         run: |
+          echo "Tải xuống từ URL: ${{ github.event.inputs.download_url }}"
           curl -L "${{ github.event.inputs.download_url }}" -o project.zip
-          unzip project.zip
+          unzip -q project.zip
           ls -la
           
       - name: Build IPA
@@ -43,9 +44,10 @@ jobs:
           mkdir -p Payload
           cp -R "build/Release-iphoneos/$PROJECT_NAME.app" Payload/
           zip -r "$PROJECT_NAME.ipa" Payload
+          ls -la
           
       - name: Upload IPA
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: iOS-App
           path: "**/*.ipa"
