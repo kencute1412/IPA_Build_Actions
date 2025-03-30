@@ -1,38 +1,22 @@
 name: Build iOS IPA
 
 on:
-  workflow_dispatch:
-    inputs:
-      download_url:
-        description: 'URL để tải xuống dự án Xcode'
-        required: true
-        default: 'https://drive.google.com/uc?export=download&id=1RKSI64zoHHgwLxfF2DMiOEJMyiEoGMSm'
+  workflow_dispatch
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-        
-      - name: Setup environment
+      
+      - name: Create dummy file
         run: |
-          mkdir -p ios-build
-          cd ios-build
-          echo "Downloading from ${{ github.event.inputs.download_url }}"
-          curl -L "${{ github.event.inputs.download_url }}" -o project.zip
-          echo "Download completed, unzipping..."
-          unzip -q project.zip || echo "Failed to unzip"
-          ls -la
-          
-      - name: Create dummy IPA for testing
-        run: |
-          cd ios-build
-          echo "This is a test IPA file" > test.ipa
-          echo "Created test.ipa file"
-          ls -la
+          mkdir -p build
+          echo "test content" > build/test.txt
+          ls -la build/
           
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: ios-app
-          path: ios-build/test.ipa
+          name: test-file
+          path: build/test.txt
